@@ -248,3 +248,5 @@ crashlytics-build.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/python,unity
 
+# Unity3D generated file on crash reports
+*.blob

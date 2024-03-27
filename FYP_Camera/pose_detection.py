@@ -17,12 +17,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-nd', '--no-debug', action="store_true", help="Prevent debug output")
 parser.add_argument('-cam', '--camera', action="store_true", help="Use DepthAI 4K RGB camera for inference (conflicts with -vid)")
 parser.add_argument('-vid', '--video', type=str, help="Path to video file to be used for inference (conflicts with -cam)")
+parser.add_argument('-index', nargs='?', type=int, default=0, help="Index of the device to use")
 args = parser.parse_args()
 
 np.set_printoptions(threshold=sys.maxsize)
 
 if not args.camera and not args.video:
     raise RuntimeError("No source selected. Please use either \"-cam\" to use RGB camera as a source or \"-vid <path>\" to run on video")
+if not (int(args.index)+1):
+    raise RuntimeError("Please specify the index of the device to use. Use \"-index <index>\"")
 
 debug = not args.no_debug
 device_info = getDeviceInfo()
@@ -181,7 +184,7 @@ def show(frame):
                             # with np.printoptions(threshold=np.inf):
                             #     with open('coordinates.txt', 'a') as f:  # Use 'a' mode to append to the file instead of overwriting it
                             #         f.write(f"Body Part: {keypointsMapping[indexOfPose]}, Starting Point: ({B[0]},{A[0]}), Ending Point: ({B[1]},{A[1]}) \n")  # Append the coordinates to the file 
-                            send_data_to_server(f"Body_Part: {keypointsMapping[indexOfPose]} Starting_Point: ({B[0]},{A[0]}) \n")
+                            send_data_to_server(f"Body_Part: {keypointsMapping[indexOfPose]} Starting_Point: ({B[0]},{A[0]}) Camera_Index: {int(args.index)}\n")
                             #print(f"Body_Part: {keypointsMapping[indexOfPose]} Starting_Point: ({B[0]},{A[0]}) Ending_Point: ({B[1]},{A[1]}) \n")
                         cv2.line(frame, scale((B[0], A[0])), scale((B[1], A[1])), colors[i], 3, cv2.LINE_AA)  # Draw lines connecting the keypoints
                     except:
