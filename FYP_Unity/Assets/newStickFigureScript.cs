@@ -16,8 +16,11 @@ public class newStickFigureScript : MonoBehaviour
     private float[] boxPoints = new float[3]; // mostLeft, mostRight, height
     private GameObject box;
     private float distance;
+    Vector3 tempPosition1;
+    Vector3 tempPosition2;
     private Vector3 position;
-    private Vector3 prevPosition;
+    private Vector3 prevPosition1;
+    private Vector3 prevPosition2;
 
     private readonly float A = (4.6f + (0.58f * Mathf.Sin(43.6f * Mathf.Deg2Rad))); //X-coordinates of the camera
     private readonly float B = -(0.58f * Mathf.Cos(43.6f * Mathf.Deg2Rad)); //Y-coordinates of the camera
@@ -69,7 +72,7 @@ public class newStickFigureScript : MonoBehaviour
                     if (bytesRead > 0)
                     {
                         string message = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                        Debug.Log($"Received: {message}");
+                        //Debug.Log($"Received: {message}");
                         this.message = message;
                         // updateBodyPart();
                         isUpdateNeeded = true;
@@ -108,6 +111,7 @@ public class newStickFigureScript : MonoBehaviour
         messageParts = message.Split(' ');
         //xc is the x-coordinate of the object in the image
         float xc = 0.0f;
+        int index = 0;
         //float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]) //x function, y is just change 0 to 1
         // boxPoints[1] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
         // boxPoints[0] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
@@ -118,6 +122,7 @@ public class newStickFigureScript : MonoBehaviour
         {
             case "Nose":
                 xc = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
+                index = int.Parse(messageParts[5]);
                 break;
             // case "R-Wr":
             //     boxPoints[0] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
@@ -134,10 +139,10 @@ public class newStickFigureScript : MonoBehaviour
             //     boxPoints[2] = ((xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) > 0) ? (xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) : (float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]) );
             //     break;
         }
-        moveBox(xc);
+        moveBox(xc, index);
     }
 
-    void moveBox(float xc)
+    void moveBox(float xc, int index)
     {
         //d = (focalLength(mm) * realHight(mm, assumed to be 1.7m(average height in ireland)) * imageHeight(3040 pixels for oakd s2))/(boxPoints[2](object hieght) * SensorHeight(6.3mm for the sony IMX378)
         //default distance is 3m
@@ -153,22 +158,38 @@ public class newStickFigureScript : MonoBehaviour
         //     0, 0, 1, 3.2026f,
         //     0, 0, 0, 1
         // );
-        position = FindIntersections((int)xc);
+        // position = FindIntersectionsPlane1((int)xc);
         // Debug.Log($"x: {point.x}, y: {point.y}");
         // Vector3 point = new Vector3(x, 0, y);
         // box.transform.position = translationMatrix.TransformPoint(point); //x and y are the x and y coordinates of the object in the image
+        // static Vector3 tempPosition1 = null;
+        // static Vector3 tempPosition2 = null;
+        if(index == 1){    
+            tempPosition1 = FindIntersectionsPlane1((int)xc);
+        }
+        else if(index == 2){
+            tempPosition2 = FindIntersectionsPlane2((int)xc);
+        }
+        // Vector3 tempPosition2 = FindIntersectionsPlane2((int)xc);
+        if(!((tempPosition1.x == 0.0f && tempPosition1.y == 0.0f && tempPosition1.z == 0.0f) || (tempPosition2.x == 0.0f && tempPosition2.y == 0.0f && tempPosition2.z == 0.0f)))
+        {
+            return;
+        }
+        position = findIntersection(tempPosition1, tempPosition2, new Vector3(-1.65f, 0, -1.35f), new Vector3(3.3f, 0, 3.25f));
+        prevPosition1 = tempPosition1;
+        prevPosition2 = tempPosition2;
         box.transform.position = position;
-        prevPosition = position;
+        // prevPosition = position;
         Debug.Log($"Moving box to point{position}, xc: {xc}");
         // yield return new WaitForSeconds(2);
     }
 
-    Vector3 FindIntersections(int xc)
+    Vector3 FindIntersectionsPlane1(int xc)
     {
         // List<Vector2> intersections = new List<Vector2>();
         if(xc == 0)
         {
-            return prevPosition;
+            return prevPosition1;
         }
         float radiusSquared = Mathf.Pow((6.7f * (410 - xc)) / 409.6f, 2);
 
@@ -176,6 +197,7 @@ public class newStickFigureScript : MonoBehaviour
         // float B = 2 * (0.929f * 0.183f + 1.65f + 1.35f * 0.929f);
         // float C = Mathf.Pow(1.65f, 2) + Mathf.Pow(0.183f, 2) + 2 * 1.35f * 0.183f + 4.8025f - radiusSquared;
 
+        //parameters for the quadratic equation for plane 1
         float A = 1.862641f;
         float B = 6.150786f;
         float C = 5.067589f - radiusSquared;
@@ -212,6 +234,66 @@ public class newStickFigureScript : MonoBehaviour
         return new Vector3(0, 0, 0);
     }
 
+    Vector3 FindIntersectionsPlane2(int xc)
+    {
+        // List<Vector2> intersections = new List<Vector2>();
+        if(xc == 0)
+        {
+            return prevPosition2;
+        }
+        float radiusSquared = Mathf.Pow((6.7f * (410 - xc)) / 409.6f, 2);
+
+        // float A = 1 + Mathf.Pow(0.929f, 2);
+        // float B = 2 * (0.929f * 0.183f + 1.65f + 1.35f * 0.929f);
+        // float C = Mathf.Pow(1.65f, 2) + Mathf.Pow(0.183f, 2) + 2 * 1.35f * 0.183f + 4.8025f - radiusSquared;
+
+        //parameters for the quadratic equation for plane 1
+        // float A = 1.862641f;
+        // float B = 6.150786f;
+        // float C = 5.067589f - radiusSquared;
+
+        const float lineSlope = -0.929f;
+        const float lineYIntercept = 1.717f;
+        const float circleCenterX = 3.3f;
+        const float circleCenterY = -1.35f;
+
+        float A = 1 + Mathf.Pow(lineSlope, 2);
+        float B = 2 * (lineSlope * lineYIntercept + circleCenterX - circleCenterY * lineSlope);
+        float C = Mathf.Pow(circleCenterX, 2) + Mathf.Pow(lineYIntercept, 2) + 2 * circleCenterY * lineYIntercept - radiusSquared;
+
+        float D = Mathf.Pow(B, 2) - 4 * A * C;
+        // D = Math.Abs(D);
+
+        Debug.Log($"A: {A}, B: {B}, C: {C}, D: {D}");
+
+        float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f, y2 = 0.0f;
+
+        if (D >= 0)
+        {
+            x1 = (-B + Mathf.Sqrt((float)D)) / (2 * A);
+            x2 = (-B - Mathf.Sqrt((float)D)) / (2 * A);
+            y1 = 0.929f * x1 + 0.183f;
+            y2 = 0.929f * x2 + 0.183f;
+
+            // Debug.Log($"x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}");
+
+            if (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY)
+            {
+                // intersections.Add(new Vector2((float)x1, (float)y1));
+                return new Vector3((float)x1, 0, (float)y1);
+            }
+            
+            if (D > 0 && x2 >= minX && x2 <= maxX && y2 >= minY && y2 <= maxY)
+            {
+                // intersections.Add(new Vector2((float)x2, (float)y2));
+                return new Vector3((float)x2, 0, (float)y2);
+            }
+        }
+
+        return new Vector3(0, 0, 0);
+    }
+
+
     /**
     * 
     * @param xc x-coordinate of the object in the image
@@ -246,6 +328,17 @@ public class newStickFigureScript : MonoBehaviour
     //     C = (float)Math.Pow((((4.6/5)*xr - B) / (xr - A)),2);
     //     return (float)Math.Sqrt(C)*(x - A) + B;
     // }
+
+    Vector3 findIntersection(Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4)
+    {
+        float x1 = p1.x, y1 = p1.z, x2 = p2.x, y2 = p2.z, x3 = p3.x, y3 = p3.z, x4 = p4.x, y4 = p4.z;
+        float x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) /
+            ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+        float y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) /
+            ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+        return new Vector3(x, 0, y);
+    }
+
 
     public struct Matrix4x4
     {

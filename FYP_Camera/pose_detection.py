@@ -179,8 +179,9 @@ def show(frame):
                         indexOfPose = i
                         #keypointsMapping = ['Nose'0, 'Neck'1, 'R-Sho'2, 'R-Elb'3, 'R-Wr'4, 'L-Sho'5, 'L-Elb'6, 'L-Wr'7, 'R-Hip'8, 'R-Knee'9, 'R-Ank'10,
                         #            'L-Hip'11, 'L-Knee'12, 'L-Ank'13, 'R-Eye'14, 'L-Eye'15, 'R-Ear'16, 'L-Ear'17]
-                        notIncludedData = [1, 3, 4, 5, 6, 8, 9, 11, 12, 14, 15, 16, 17] #not including anything about neck
-                        if indexOfPose not in notIncludedData:
+                        #notIncludedData = [1, 3, 4, 5, 6, 8, 9, 11, 12, 14, 15, 16, 17] #not including anything about neck
+                        includedData = [0] #including only the body parts that are needed
+                        if indexOfPose in includedData:
                             # with np.printoptions(threshold=np.inf):
                             #     with open('coordinates.txt', 'a') as f:  # Use 'a' mode to append to the file instead of overwriting it
                             #         f.write(f"Body Part: {keypointsMapping[indexOfPose]}, Starting Point: ({B[0]},{A[0]}), Ending Point: ({B[1]},{A[1]}) \n")  # Append the coordinates to the file 
