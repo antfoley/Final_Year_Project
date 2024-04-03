@@ -16,10 +16,14 @@ public class newStickFigureScript : MonoBehaviour
     private float[] boxPoints = new float[3]; // mostLeft, mostRight, height
     private GameObject box;
     private float distance;
+    private Vector3 position;
+    private Vector3 prevPosition;
 
     private readonly float A = (4.6f + (0.58f * Mathf.Sin(43.6f * Mathf.Deg2Rad))); //X-coordinates of the camera
     private readonly float B = -(0.58f * Mathf.Cos(43.6f * Mathf.Deg2Rad)); //Y-coordinates of the camera
     private float C;
+    private const float minX = -1.65f, maxX = 3.3f;
+    private const float minY = -1.35f, maxY = 3.25f;
 
     // Start is called before the first frame update
     void Start()
@@ -65,7 +69,7 @@ public class newStickFigureScript : MonoBehaviour
                     if (bytesRead > 0)
                     {
                         string message = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                        //Debug.Log($"Received: {message}");
+                        Debug.Log($"Received: {message}");
                         this.message = message;
                         // updateBodyPart();
                         isUpdateNeeded = true;
@@ -91,7 +95,7 @@ public class newStickFigureScript : MonoBehaviour
     void SpawnBox()
     {
         box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        box.transform.position = new Vector3(0, 0, 0);
+        box.transform.position = new Vector3(0, 0.75f, 0);
         box.transform.localScale = new Vector3(0.5f, 1.5f, 0.5f);
         box.transform.parent = this.transform;
         box.GetComponent<Renderer>().material.color = Color.red;
@@ -115,20 +119,20 @@ public class newStickFigureScript : MonoBehaviour
             case "Nose":
                 xc = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
                 break;
-            case "R-Wr":
-                boxPoints[0] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
-                break;
-            case "L-Wr":
-                boxPoints[1] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
-                break;
-            case "L-Ank":
-                //boxPoints[2] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[1]);
-                boxPoints[2] = ((xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) > 0) ? (xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) : (float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]) );
-                break;
-            case "R-Ank":
-                //boxPoints[2] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[1]);
-                boxPoints[2] = ((xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) > 0) ? (xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) : (float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]) );
-                break;
+            // case "R-Wr":
+            //     boxPoints[0] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
+            //     break;
+            // case "L-Wr":
+            //     boxPoints[1] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]);
+            //     break;
+            // case "L-Ank":
+            //     //boxPoints[2] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[1]);
+            //     boxPoints[2] = ((xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) > 0) ? (xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) : (float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]) );
+            //     break;
+            // case "R-Ank":
+            //     //boxPoints[2] = float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[1]);
+            //     boxPoints[2] = ((xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) > 0) ? (xc - float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0])) : (float.Parse(messageParts[3].Substring(1, messageParts[3].Length - 2).Split(',')[0]) );
+            //     break;
         }
         moveBox(xc);
     }
@@ -137,23 +141,75 @@ public class newStickFigureScript : MonoBehaviour
     {
         //d = (focalLength(mm) * realHight(mm, assumed to be 1.7m(average height in ireland)) * imageHeight(3040 pixels for oakd s2))/(boxPoints[2](object hieght) * SensorHeight(6.3mm for the sony IMX378)
         //default distance is 3m
-        distance = (((4.81f * 1500.0f * 3040.0f)/(boxPoints[2] * 6.3f + 0.000000000001f) > 10)) ? ((4.81f * 1500.0f * 3040.0f)/(boxPoints[2] * 6.3f+ 0.000000000001f)/10000.0f) : 3;
+        // distance = (((4.81f * 1500.0f * 3040.0f)/(boxPoints[2] * 6.3f + 0.000000000001f) > 10)) ? ((4.81f * 1500.0f * 3040.0f)/(boxPoints[2] * 6.3f+ 0.000000000001f)/10000.0f) : 3;
         //distance = 4.0f;
-        Debug.Log($"Distance: {distance}, BoxPoints[2]: {boxPoints[2]}");
+        // Debug.Log($"Distance: {distance}, BoxPoints[2]: {boxPoints[2]}");
         //for this x, y is used on the 2D plane for simplicity of maths 
-        float x = getX(xc);
-        float y = getY(xc, x);
-        Matrix4x4 translationMatrix = new Matrix4x4(
-            1, 0, 0, -10.306f,
-            0, 1, 0, 0,
-            0, 0, 1, 3.2026f,
-            0, 0, 0, 1
-        );
-        Debug.Log($"x: {x}, y: {y}");
-        Vector3 point = new Vector3(x, 0, y);
-        box.transform.position = translationMatrix.TransformPoint(point); //x and y are the x and y coordinates of the object in the image
-        //box.transform.position = point;
-        Debug.Log($"Moving box to point{point}, distance: {distance}");
+        // float x = getX(xc);
+        // float y = getY(xc, x);
+        // Matrix4x4 translationMatrix = new Matrix4x4(
+        //     1, 0, 0, -10.306f,
+        //     0, 1, 0, 0,
+        //     0, 0, 1, 3.2026f,
+        //     0, 0, 0, 1
+        // );
+        position = FindIntersections((int)xc);
+        // Debug.Log($"x: {point.x}, y: {point.y}");
+        // Vector3 point = new Vector3(x, 0, y);
+        // box.transform.position = translationMatrix.TransformPoint(point); //x and y are the x and y coordinates of the object in the image
+        box.transform.position = position;
+        prevPosition = position;
+        Debug.Log($"Moving box to point{position}, xc: {xc}");
+        // yield return new WaitForSeconds(2);
+    }
+
+    Vector3 FindIntersections(int xc)
+    {
+        // List<Vector2> intersections = new List<Vector2>();
+        if(xc == 0)
+        {
+            return prevPosition;
+        }
+        float radiusSquared = Mathf.Pow((6.7f * (410 - xc)) / 409.6f, 2);
+
+        // float A = 1 + Mathf.Pow(0.929f, 2);
+        // float B = 2 * (0.929f * 0.183f + 1.65f + 1.35f * 0.929f);
+        // float C = Mathf.Pow(1.65f, 2) + Mathf.Pow(0.183f, 2) + 2 * 1.35f * 0.183f + 4.8025f - radiusSquared;
+
+        float A = 1.862641f;
+        float B = 6.150786f;
+        float C = 5.067589f - radiusSquared;
+
+        float D = Mathf.Pow(B, 2) - 4 * A * C;
+        // D = Math.Abs(D);
+
+        Debug.Log($"A: {A}, B: {B}, C: {C}, D: {D}");
+
+        float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f, y2 = 0.0f;
+
+        if (D >= 0)
+        {
+            x1 = (-B + Mathf.Sqrt((float)D)) / (2 * A);
+            x2 = (-B - Mathf.Sqrt((float)D)) / (2 * A);
+            y1 = 0.929f * x1 + 0.183f;
+            y2 = 0.929f * x2 + 0.183f;
+
+            // Debug.Log($"x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}");
+
+            if (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY)
+            {
+                // intersections.Add(new Vector2((float)x1, (float)y1));
+                return new Vector3((float)x1, 0, (float)y1);
+            }
+            
+            if (D > 0 && x2 >= minX && x2 <= maxX && y2 >= minY && y2 <= maxY)
+            {
+                // intersections.Add(new Vector2((float)x2, (float)y2));
+                return new Vector3((float)x2, 0, (float)y2);
+            }
+        }
+
+        return new Vector3(0, 0, 0);
     }
 
     /**
@@ -161,17 +217,17 @@ public class newStickFigureScript : MonoBehaviour
     * @param xc x-coordinate of the object in the image
     * @return x-coordinate of the object in the real world
     */
-    float getX(float xc)
-    {
-        float xr = (xc / 4096)*6.7f;
-        C = (float)Math.Pow((((4.6/5)*xr - B) / (xr - A)),2);
-        float a,b,c;
-        a = 1.0f + C;
-        b = -2*A - 2*C*A;
-        c = (float)Math.Pow(A, 2) + (float)Math.Pow(A, 2)*C - (float)Math.Pow(distance, 2);
-        //Debug.Log($"a: {a}, b: {b}, c: {c}, real: {b * b - 4 * a * c}");
-        return ((-b + (float)Math.Sqrt(b * b - 4 * a * c)) / (2 * a) == (-b + (float)Math.Sqrt(b * b - 4 * a * c)) / (2 * a)) ? (-b + (float)Math.Sqrt(b * b - 4 * a * c)) / (2 * a) : 0;
-    }
+    // float getX(float xc)
+    // {
+    //     float xr = (xc / 4096)*6.7f;
+    //     C = (float)Math.Pow((((4.6/5)*xr - B) / (xr - A)),2);
+    //     float a,b,c;
+    //     a = 1.0f + C;
+    //     b = -2*A - 2*C*A;
+    //     c = (float)Math.Pow(A, 2) + (float)Math.Pow(A, 2)*C - (float)Math.Pow(distance, 2);
+    //     //Debug.Log($"a: {a}, b: {b}, c: {c}, real: {b * b - 4 * a * c}");
+    //     return ((-b + (float)Math.Sqrt(b * b - 4 * a * c)) / (2 * a) == (-b + (float)Math.Sqrt(b * b - 4 * a * c)) / (2 * a)) ? (-b + (float)Math.Sqrt(b * b - 4 * a * c)) / (2 * a) : 0;
+    // }
 
 
     /**
@@ -181,15 +237,15 @@ public class newStickFigureScript : MonoBehaviour
     * @param C constant
     * @return y-coordinate of the object in the real world (2D Plane)
     */
-    float getY(float xc, float x)
-    {
-        // float xr = (xc / 4096)*6.7f;
-        // float y = (float)Math.Sqrt(C)*(xr - A) + B;
-        // return (y*100) - 100;
-        float xr = (xc / 4096)*6.7f;
-        C = (float)Math.Pow((((4.6/5)*xr - B) / (xr - A)),2);
-        return (float)Math.Sqrt(C)*(x - A) + B;
-    }
+    // float getY(float xc, float x)
+    // {
+    //     // float xr = (xc / 4096)*6.7f;
+    //     // float y = (float)Math.Sqrt(C)*(xr - A) + B;
+    //     // return (y*100) - 100;
+    //     float xr = (xc / 4096)*6.7f;
+    //     C = (float)Math.Pow((((4.6/5)*xr - B) / (xr - A)),2);
+    //     return (float)Math.Sqrt(C)*(x - A) + B;
+    // }
 
     public struct Matrix4x4
     {
