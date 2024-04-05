@@ -1,4 +1,4 @@
-using System;
+/* using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -230,22 +230,22 @@ public class newStickFigureScript : MonoBehaviour
         // box.transform.position = translationMatrix.TransformPoint(point); //x and y are the x and y coordinates of the object in the image
         // static Vector3 tempPosition1 = null;
         // static Vector3 tempPosition2 = null;
-        if(index==1){return;}
+        // if(index==2){return;}
         // if(index == 1){    
-            // tempPosition1 = FindIntersectionsPlane1((int)xc);
-            // isTempPosition1Set = true;
+            tempPosition1 = FindIntersectionsPlane1((int)xc);
+            isTempPosition1Set = true;
         // }
-        // // else if(index == 2){
+        // else if(index == 2){
             tempPosition2 = FindIntersectionsPlane2((int)xc);
             isTempPosition2Set = true;
-        // // }
-        // // Vector3 tempPosition2 = FindIntersectionsPlane2((int)xc);
-        // if(!isTempPosition1Set || !isTempPosition2Set)
-        // {
-        //     return;
         // }
-        // position = findIntersection(tempPosition1, tempPosition2, new Vector3(-1.65f, 0, 3.25f), new Vector3(-1.65f, 0, -1.35f));
-        position = tempPosition2; //just for debuging cam 1
+        // Vector3 tempPosition2 = FindIntersectionsPlane2((int)xc);
+        if(!isTempPosition1Set || !isTempPosition2Set)
+        {
+            return;
+        }
+        position = findIntersection(tempPosition1, tempPosition2, new Vector3(-1.65f, 0, 3.25f), new Vector3(-1.65f, 0, -1.35f));
+        //position = tempPosition1; //just for debuging cam 1
         isTempPosition1Set = false;
         isTempPosition2Set = false;
         prevPosition1 = tempPosition1;
@@ -256,117 +256,157 @@ public class newStickFigureScript : MonoBehaviour
         // yield return new WaitForSeconds(2);
     }
 
-    Vector3 FindIntersectionsPlane1(int xc)
-    {
-        // List<Vector2> intersections = new List<Vector2>();
-        if(xc == 0)
+//    Vector3 FindIntersectionsPlane1(int xc)
+//    {
+//        // List<Vector2> intersections = new List<Vector2>();
+//        if(xc == 0)
+//        {
+//            return prevPosition1;
+//        }
+//        float radiusSquared = Mathf.Pow((6.7f * (410 - xc)) / 409.6f, 2);
+//
+//        // float A = 1 + Mathf.Pow(0.929f, 2);
+//        // float B = 2 * (0.929f * 0.183f + 1.65f + 1.35f * 0.929f);
+//        // float C = Mathf.Pow(1.65f, 2) + Mathf.Pow(0.183f, 2) + 2 * 1.35f * 0.183f + 4.8025f - radiusSquared;
+//
+//        //parameters for the quadratic equation for plane 1
+//        const float lineSlope = 0.929f;
+//        const float lineYIntercept = 0.183f;
+//        const float circleCenterX = -1.65f;
+//        const float circleCenterY = -1.35f;
+//
+//        float A = 1 + Mathf.Pow(lineSlope, 2);
+//        float B = 2 * (lineSlope * lineYIntercept + circleCenterX - circleCenterY * lineSlope);
+//        float C = Mathf.Pow(circleCenterX, 2) + Mathf.Pow(lineYIntercept, 2) + 2 * circleCenterY * lineYIntercept - radiusSquared;
+//
+//        float D = Mathf.Pow(B, 2) - 4 * A * C;
+//
+//        // Debug.Log($"A: {A}, B: {B}, C: {C}, D: {D}");
+//
+//        float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f, y2 = 0.0f;
+//
+//        if (D >= 0)
+//        {
+//            x1 = (-B + Mathf.Sqrt((float)D)) / (2 * A);
+//            x2 = (-B - Mathf.Sqrt((float)D)) / (2 * A);
+//            y1 = 0.929f * x1 + 0.183f;
+//            y2 = 0.929f * x2 + 0.183f;
+//
+//            // Debug.Log($"x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}");
+//
+//            if (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY)
+//            {
+//                // intersections.Add(new Vector2((float)x1, (float)y1));
+//                return new Vector3((float)x1, 0, (float)y1);
+//            }
+//            
+//            if (D > 0 && x2 >= minX && x2 <= maxX && y2 >= minY && y2 <= maxY)
+//            {
+//                // intersections.Add(new Vector2((float)x2, (float)y2));
+//                return new Vector3((float)x2, 0, (float)y2);
+//            }
+//        }
+//
+//        return new Vector3(0, 0, 0);
+//    }
+
+    Vector3 FindIntersectionsPlane1(int xc){
+        float a = (float)xc;
+        float b = 409.6f - (float)xc;
+
+        Vector3 pointB = new Vector3(-1.65f, 0, -1.35f);
+        Vector3 pointA = new Vector3(3.3f, 0, 3.25f);
+
+
+        Vector3 point = new Vector3(0, 0, 0);
+        if (a == 0 || b == 0)
         {
             return prevPosition1;
         }
-        float radiusSquared = Mathf.Pow((6.7f * (410 - xc)) / 409.6f, 2);
 
-        // float A = 1 + Mathf.Pow(0.929f, 2);
-        // float B = 2 * (0.929f * 0.183f + 1.65f + 1.35f * 0.929f);
-        // float C = Mathf.Pow(1.65f, 2) + Mathf.Pow(0.183f, 2) + 2 * 1.35f * 0.183f + 4.8025f - radiusSquared;
+        point.x = (pointA.x * b + pointB.x * a) / (a + b);
+        point.z = (pointA.z * b + pointB.z * a) / (a + b);
 
-        //parameters for the quadratic equation for plane 1
-        const float lineSlope = 0.929f;
-        const float lineYIntercept = 0.183f;
-        const float circleCenterX = -1.65f;
-        const float circleCenterY = -1.35f;
-
-        float A = 1 + Mathf.Pow(lineSlope, 2);
-        float B = 2 * (lineSlope * lineYIntercept + circleCenterX - circleCenterY * lineSlope);
-        float C = Mathf.Pow(circleCenterX, 2) + Mathf.Pow(lineYIntercept, 2) + 2 * circleCenterY * lineYIntercept - radiusSquared;
-
-        float D = Mathf.Pow(B, 2) - 4 * A * C;
-
-        // Debug.Log($"A: {A}, B: {B}, C: {C}, D: {D}");
-
-        float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f, y2 = 0.0f;
-
-        if (D >= 0)
-        {
-            x1 = (-B + Mathf.Sqrt((float)D)) / (2 * A);
-            x2 = (-B - Mathf.Sqrt((float)D)) / (2 * A);
-            y1 = 0.929f * x1 + 0.183f;
-            y2 = 0.929f * x2 + 0.183f;
-
-            // Debug.Log($"x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}");
-
-            if (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY)
-            {
-                // intersections.Add(new Vector2((float)x1, (float)y1));
-                return new Vector3((float)x1, 0, (float)y1);
-            }
-            
-            if (D > 0 && x2 >= minX && x2 <= maxX && y2 >= minY && y2 <= maxY)
-            {
-                // intersections.Add(new Vector2((float)x2, (float)y2));
-                return new Vector3((float)x2, 0, (float)y2);
-            }
-        }
-
-        return new Vector3(0, 0, 0);
+        return point;
     }
 
-    Vector3 FindIntersectionsPlane2(int xc)
-    {
-        // List<Vector2> intersections = new List<Vector2>();
-        if(xc == 0)
+    // Vector3 FindIntersectionsPlane2(int xc)
+    // {
+    //     // List<Vector2> intersections = new List<Vector2>();
+    //     if(xc == 0)
+    //     {
+    //         return prevPosition2;
+    //     }
+    //     float radiusSquared = Mathf.Pow((6.7f * (xc)) / 409.6f, 2);
+
+    //     // float A = 1 + Mathf.Pow(0.929f, 2);
+    //     // float B = 2 * (0.929f * 0.183f + 1.65f + 1.35f * 0.929f);
+    //     // float C = Mathf.Pow(1.65f, 2) + Mathf.Pow(0.183f, 2) + 2 * 1.35f * 0.183f + 4.8025f - radiusSquared;
+
+    //     //parameters for the quadratic equation for plane 1
+    //     // float A = 1.862641f;
+    //     // float B = 6.150786f;
+    //     // float C = 5.067589f - radiusSquared;
+
+    //     const float lineSlope = -0.929f;
+    //     const float lineYIntercept = 1.717f;
+    //     const float circleCenterX = 3.3f;
+    //     const float circleCenterY = -1.35f;
+
+    //     float A = 1 + Mathf.Pow(lineSlope, 2);
+    //     float B = 2 * (lineSlope * lineYIntercept + circleCenterX - circleCenterY * lineSlope);
+    //     float C = Mathf.Pow(circleCenterX, 2) + Mathf.Pow(lineYIntercept, 2) + 2 * circleCenterY * lineYIntercept - radiusSquared;
+
+    //     float D = Mathf.Pow(B, 2) - 4 * A * C;
+    //     // D = Math.Abs(D);
+
+    //     Debug.Log($"A: {A}, B: {B}, C: {C}, D: {D}");
+
+    //     float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f, y2 = 0.0f;
+
+    //     if (D >= 0)
+    //     {
+    //         x1 = (-B + Mathf.Sqrt((float)D)) / (2 * A);
+    //         x2 = (-B - Mathf.Sqrt((float)D)) / (2 * A);
+    //         y1 = lineSlope * x1 + lineYIntercept;
+    //         y2 = lineSlope * x2 + lineYIntercept;
+
+    //         // Debug.Log($"x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}");
+
+    //         if (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY)
+    //         {
+    //             // intersections.Add(new Vector2((float)x1, (float)y1));
+    //             return new Vector3((float)x1, 0, (float)y1);
+    //         }
+            
+    //         if (D > 0 && x2 >= minX && x2 <= maxX && y2 >= minY && y2 <= maxY)
+    //         {
+    //             // intersections.Add(new Vector2((float)x2, (float)y2));
+    //             return new Vector3((float)x2, 0, (float)y2);
+    //         }
+    //     }
+
+    //     return new Vector3(0, 0, 0);
+    // }
+
+    Vector3 FindIntersectionsPlane2(int xc){
+        float a = (float)xc;
+        float b = 409.6f - (float)xc;
+
+        Vector3 pointA = new Vector3(-1.65f, 0, 3.25f);
+        Vector3 pointB = new Vector3(3.3f, 0, -1.35f);
+
+
+        Vector3 point = new Vector3(0, 0, 0);
+        if (a == 0 || b == 0)
         {
             return prevPosition2;
         }
-        float radiusSquared = Mathf.Pow((6.7f * (xc)) / 409.6f, 2);
 
-        // float A = 1 + Mathf.Pow(0.929f, 2);
-        // float B = 2 * (0.929f * 0.183f + 1.65f + 1.35f * 0.929f);
-        // float C = Mathf.Pow(1.65f, 2) + Mathf.Pow(0.183f, 2) + 2 * 1.35f * 0.183f + 4.8025f - radiusSquared;
+        point.x = (pointA.x * b + pointB.x * a) / (a + b);
+        point.z = (pointA.z * b + pointB.z * a) / (a + b);
 
-        //parameters for the quadratic equation for plane 1
-        // float A = 1.862641f;
-        // float B = 6.150786f;
-        // float C = 5.067589f - radiusSquared;
-
-        const float lineSlope = -0.929f;
-        const float lineYIntercept = 1.717f;
-        const float circleCenterX = 3.3f;
-        const float circleCenterY = -1.35f;
-
-        float A = 1 + Mathf.Pow(lineSlope, 2);
-        float B = 2 * (lineSlope * lineYIntercept + circleCenterX - circleCenterY * lineSlope);
-        float C = Mathf.Pow(circleCenterX, 2) + Mathf.Pow(lineYIntercept, 2) + 2 * circleCenterY * lineYIntercept - radiusSquared;
-
-        float D = Mathf.Pow(B, 2) - 4 * A * C;
-        // D = Math.Abs(D);
-
-        // Debug.Log($"A: {A}, B: {B}, C: {C}, D: {D}");
-
-        float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f, y2 = 0.0f;
-
-        if (D >= 0)
-        {
-            x1 = (-B + Mathf.Sqrt((float)D)) / (2 * A);
-            x2 = (-B - Mathf.Sqrt((float)D)) / (2 * A);
-            y1 = lineSlope * x1 + lineYIntercept;
-            y2 = lineSlope * x2 + lineYIntercept;
-
-            // Debug.Log($"x1: {x1}, y1: {y1}, x2: {x2}, y2: {y2}");
-
-            if (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY)
-            {
-                // intersections.Add(new Vector2((float)x1, (float)y1));
-                return new Vector3((float)x1, 0, (float)y1);
-            }
-            
-            if (D > 0 && x2 >= minX && x2 <= maxX && y2 >= minY && y2 <= maxY)
-            {
-                // intersections.Add(new Vector2((float)x2, (float)y2));
-                return new Vector3((float)x2, 0, (float)y2);
-            }
-        }
-
-        return new Vector3(0, 0, 0);
+        return point;
     }
 
 
@@ -407,21 +447,67 @@ public class newStickFigureScript : MonoBehaviour
 
     //p1, p3 same line
     //p2, p4 same line
+    /*
     Vector3 findIntersection(Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4)
     {
-        float A1, B1, C1, A2, B2, C2;
-        A1 = - ((p3.z - p1.z)/(p3.x - p1.x));
-        B1 = 1;
-        C1 = -p1.z + (Mathf.Abs(A1))*p1.x;
-        A2 = - ((p4.z - p2.z)/(p4.x - p2.x));
-        B2 = 1;
-        C2 = -p2.z + (Mathf.Abs(A2))*p2.x;
-        float x = ((B1*C2)-(B2*C1))/((A1*B2)-(A2*B1));
-        float z = ((A2*C1)-(A1*C2))/((A1*B2)-(A2*B1));
-        if (x >= minX && x <= maxX && z >= minY && z <= maxY){
-            return new Vector3(x, 0, z);
+        // float A1, B1, C1, A2, B2, C2;
+        // A1 = - ((p3.z - p1.z)/(p3.x - p1.x));
+        // B1 = 1;
+        // C1 = -p1.z + (Mathf.Abs(A1))*p1.x;
+        // A2 = - ((p4.z - p2.z)/(p4.x - p2.x));
+        // B2 = 1;
+        // C2 = -p2.z + (Mathf.Abs(A2))*p2.x;
+        // float x = ((B1*C2)-(B2*C1))/((A1*B2)-(A2*B1));
+        // float z = ((A2*C1)-(A1*C2))/((A1*B2)-(A2*B1));
+        // if (x >= minX && x <= maxX && z >= minY && z <= maxY){
+        //     if(x <= minX){
+        //         x = minX;
+        //     }
+        //     if(x >= maxX){
+        //         x = maxX;
+        //     }
+        //     if(z <= minY){
+        //         z = minY;
+        //     }
+        //     if(z >= maxY){
+        //         z = maxY;
+        //     }
+        // }
+        // return new Vector3(x, 0, z);
+        // Calculate the slopes (m1 and m2) of the two lines
+        float m1 = (p3.z - p1.z) / (p3.x - p1.x);
+        float m2 = (p4.z - p2.z) / (p4.x - p2.x);
+        
+        // Calculate the y-intercepts (b1 and b2) of the lines
+        float b1 = p1.z - m1 * p1.x;
+        float b2 = p2.z - m2 * p2.x;
+        
+        // Check if the lines are parallel (have the same slope)
+        if (Mathf.Abs(m1 - m2) < 0.001f)
+        {
+            // Lines are parallel (or coincident), no intersection or infinite intersections
+            // Handle accordingly; here we return an indicative value
+            return new Vector3(float.NaN, 0, float.NaN);
         }
-        return prevPosition;
+        
+        // Calculate the intersection point
+        float x = (b2 - b1) / (m1 - m2);
+        float z = m1 * x + b1;
+
+        if(x <= minX){
+            x = minX;
+        }
+        if(x >= maxX){
+            x = maxX;
+        }
+        if(z <= minY){
+            z = minY;
+        }
+        if(z >= maxY){
+            z = maxY;
+        }
+        
+        return new Vector3(x, 0, z);
     }
 
 
@@ -450,4 +536,4 @@ public class newStickFigureScript : MonoBehaviour
             return new Vector3(x, y, z);
         }
     }
-}
+} */
