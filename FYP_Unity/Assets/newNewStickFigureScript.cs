@@ -33,8 +33,8 @@ public class newStickFigureScript : MonoBehaviour
     private void OnDestroy()
     {
         isServerRunning = false;
-        udpListener1.Close();
-        udpListener2.Close();
+        udpListener1?.Close();
+        udpListener2?.Close();
     }
 
     private void StartListeningForMessages()
@@ -47,17 +47,23 @@ public class newStickFigureScript : MonoBehaviour
     {
         while (isServerRunning)
         {
-            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 12344 + sourceId);
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0/* 12344 + sourceId */);
             UdpReceiveResult receiveResult = await udpClient.ReceiveAsync();
-            byte[] bytesReceived = receiveResult.Buffer;
-            string message = Encoding.ASCII.GetString(bytesReceived);
+            // byte[] bytesReceived = receiveResult.Buffer;
+            string message = Encoding.ASCII.GetString(receiveResult.Buffer);
             // Debug.Log($"Received message from source {sourceId}: {message}");
             UnityMainThreadDispatcher.Instance().Enqueue(() =>
             {
-                if (sourceId == 1)
+                /* if (sourceId == 1)
                     latestMessage1 = message;
                 else
-                    latestMessage2 = message;
+                    latestMessage2 = message; */
+                switch(sourceId)
+                {
+                    case 1: latestMessage1 = message; break;
+                    case 2: latestMessage2 = message; break;
+                    default: break;
+                }
             });
         }
     }
@@ -67,9 +73,9 @@ public class newStickFigureScript : MonoBehaviour
         if (!string.IsNullOrEmpty(latestMessage1) && !string.IsNullOrEmpty(latestMessage2))
         {
             Debug.Log("Calculating intersection point");
-            Vector3 p1, p2, p3, p4;
-            (p1, p3) = ConvertMessageToPoint(latestMessage1);
-            (p2, p4) = ConvertMessageToPoint(latestMessage2);
+            // Vector3 p1, p2, p3, p4;
+            var (p1, p3) = ConvertMessageToPoint(latestMessage1);
+            var (p2, p4) = ConvertMessageToPoint(latestMessage2);
             // var intersection = Vector3.zero;
             Task.Run( async() =>
             {
