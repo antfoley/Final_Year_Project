@@ -139,17 +139,7 @@ def send_data_to_server(data):
     index = args.index - 1
     server_port = 12345 + index
 
-    def process_index(index):
-        switcher = {
-            0: "Process index 0",
-            1: "Process index 1",
-            2: "Process index 2",
-            # Add more cases as needed
-        }
-        return switcher.get(index, "Invalid index")
-
-    result = process_index(index)
-    print(result)
+    print(f'processing index: {index}')
 
     # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     #     sock.connect((server_ip, server_port))
@@ -161,14 +151,13 @@ def send_data_to_server(data):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # Send data
-        sent = sock.sendto(data.encode(), (server_ip, server_port))
+        sock.sendto(data.encode(), (server_ip, server_port))
         # Optionally, wait for a response
-        sock.settimeout(2.0)  # Timeout after 2 seconds
-        data, server = sock.recvfrom(4096)
-        print(f"received response: {data} from {server}")
+        # sock.settimeout(2.0)  # Timeout after 2 seconds
+        # data, server = sock.recvfrom(4096)
+        # print(f"received response: {data} from {server}")
     finally:
         sock.close()
-
 
 global A, B
 A = None
@@ -179,7 +168,7 @@ def show(frame):
     if keypoints_list is not None and detected_keypoints is not None and personwiseKeypoints is not None:
         scale_factor = frame.shape[0] / nm.inputSize[1]  # Calculate the scale factor for resizing the keypoints
         offset_w = int(frame.shape[1] - nm.inputSize[0] * scale_factor) // 2  # Calculate the offset for aligning the keypoints
-
+        #this function scales something
         def scale(point):
             return int(point[0] * scale_factor) + offset_w, int(point[1] * scale_factor)  # Scale the point coordinates
 
