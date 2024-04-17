@@ -16,6 +16,10 @@ public class newStickFigureScript : MonoBehaviour
     private UdpClient udpListener2;
     private bool isServerRunning = false;
     private GameObject box;
+    private int counter;
+    private int totalCounter;
+    private float timeElapsed;
+    private float totalElapsedTime;
     private const float minX = -1.65f, maxX = 3.3f;
     private const float minY = -1.35f, maxY = 3.25f;
     // private readonly Queue<Action> _mainThreadActions = new Queue<Action>();
@@ -70,9 +74,11 @@ public class newStickFigureScript : MonoBehaviour
 
     void Update()
     {
+        timeElapsed += Time.deltaTime;
+        totalElapsedTime += Time.deltaTime;
         if (!string.IsNullOrEmpty(latestMessage1) && !string.IsNullOrEmpty(latestMessage2))
         {
-            Debug.Log("Calculating intersection point");
+            // Debug.Log("Calculating intersection point");
             // Vector3 p1, p2, p3, p4;
             var (p1, p3) = ConvertMessageToPoint(latestMessage1);
             var (p2, p4) = ConvertMessageToPoint(latestMessage2);
@@ -102,6 +108,13 @@ public class newStickFigureScript : MonoBehaviour
             latestMessage1 = "";
             latestMessage2 = "";
         }
+        if (timeElapsed >= 1.0f)
+        {
+            Debug.Log($"Amount of movements in last second: {counter}");
+            Debug.Log($"Average movement per second: {(float)totalCounter / totalElapsedTime}");
+            timeElapsed = 0.0f;
+            counter = 0;
+        }
     }
 
     private async Task<Vector3> CalculateIntersectionAsync(Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4)
@@ -111,8 +124,14 @@ public class newStickFigureScript : MonoBehaviour
 
     private void ApplyIntersectionPoint()
     {
+        if (float.IsNaN(intersectionPoint.x) || float.IsNaN(intersectionPoint.z))
+        {
+            return;
+        }
         box.transform.position = intersectionPoint;
-        Debug.Log($"Intersection point: {intersectionPoint} /n box moved!!!");
+        counter++;
+        totalCounter++;
+        // Debug.Log($"Intersection point: {intersectionPoint} /n box moved!!!");
     }
 
     private (Vector3, Vector3) ConvertMessageToPoint(string message)
@@ -167,7 +186,7 @@ public class newStickFigureScript : MonoBehaviour
         float b1 = p1.z - m1 * p1.x;
         float b2 = p2.z - m2 * p2.x;
         
-        if (Mathf.Abs(m1 - m2) < 0.001f)
+        if (Mathf.Abs(m1 - m2) < 0.0000001f)
         {
             return new Vector3(float.NaN, 0, float.NaN);
         }
