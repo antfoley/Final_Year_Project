@@ -1,70 +1,83 @@
-import socket
-from depthai_sdk import Previews, getDeviceInfo, downloadYTVideo, FPSHandler
-from depthai_sdk.managers import PipelineManager, PreviewManager, NNetManager
 import depthai as dai
+import threading
+import contextlib
 import cv2
-import argparse
 import blobconverter
-from pathlib import Path
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-nd', '--no-debug', action="store_true", help="Prevent debug output")
-parser.add_argument('-cam', '--camera', action="store_true", help="Use DepthAI 4K RGB camera for inference (conflicts with -vid)")
-parser.add_argument('-vid', '--video', type=str, help="Path to video file to be used for inference (conflicts with -cam)")
-parser.add_argument('-index', nargs='?', type=int, default=0, help="Index of the device to use")
-args = parser.parse_args()
+# Function to create the pipeline for each camera
+def getPipeline():
+    pipeline = dai.Pipeline()
 
-debug = not args.no_debug
-device_info = getDeviceInfo()
+    # Create the color camera node
+    cam_rgb = pipeline.create(dai.node.ColorCamera)
+    cam_rgb.setPreviewSize(456, 256)
+    cam_rgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
+    cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+    cam_rgb.setInterleaved(False)
 
-if args.camera:
-    shaves = 6
-else:
-    shaves = 8
-    if str(args.video).startswith('https'):
-        args.video = downloadYTVideo(str(args.video))
-        print("Youtube video downloaded.")
-    if not Path(args.video).exists():
-        raise ValueError("Path {} does not exists!".format(args.video))
+    # Create the neural network node
+    nn = pipeline.create(dai.node.MobileNetDetectionNetwork)
+    nn.setConfidenceThreshold(0.5)
+    blob_path = blobconverter.from_zoo(name="person-detection-retail-0013", shaves=6)
+    nn.setBlobPath(blob_path)
 
-nm = NNetManager(inputSize=(456,256))
-pm = PipelineManager()
-pm.setNnManager(nm)
+    # Create output nodes
+    xout_rgb = pipeline.create(dai.node.XLinkOut)
+    xout_rgb.setStreamName("rgb")
+    xout_nn = pipeline.create(dai.node.XLinkOut)
+    xout_nn.setStreamName("nn")
 
-if args.camera:
-    fps = FPSHandler()
-    pm.createColorCam(previewSize=(456, 256), xout=True)
-else:
-    cap = cv2.VideoCapture(str(Path(args.video).resolve().absolute()))
-    fps = FPSHandler(cap)
+    # Linking
+    cam_rgb.preview.link(nn.input)
+    nn.out.link(xout_nn.input)
+    cam_rgb.preview.link(xout_rgb.input)
 
-blob_path = blobconverter.from_zoo(name='person-detection-retail-0013', shaves=shaves)
-nn = nm.createNN(pm.pipeline, pm.nodes, source=Previews.color.name if args.camera else "host", blobPath=Path(blob_path), fullFov=True)
-pm.addNn(nn=nn)
+    return pipeline
 
-def send_data_to_server(data):
-    server_ip = '127.0.0.1'
-    index = args.index - 1
-    server_port = 12345 + index
-
-    print(f'processing index: {index}')
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# Worker thread function
+def worker(dev_info, stack, dic):
     try:
-        sock.sendto(data.encode(), (server_ip, server_port))
+        device = stack.enter_context(dai.Device(dev_info, dai.OpenVINO.Version.VERSION_2021_4, dai.UsbSpeed.HIGH))
+        print("=== Connected to " + dev_info.getMxId())
+
+        device.startPipeline(getPipeline())
+        dic[dev_info.getMxId()] = {
+            "rgb": device.getOutputQueue(name="rgb", maxSize=4, blocking=False),
+            "nn": device.getOutputQueue(name="nn", maxSize=4, blocking=False)
+        }
+    except Exception as e:
+        print(f"Failed to initialize device {dev_info.getMxId()}: {str(e)}")
+
+# Main execution
+device_infos = dai.Device.getAllAvailableDevices()
+print(f'Found {len(device_infos)} devices')
+
+with contextlib.ExitStack() as stack:
+    queues = {}
+    threads = []
+    for dev in device_infos:
+        thread = threading.Thread(target=worker, args=(dev, stack, queues))
+        thread.start()
+        threads.append(thread)
+
+    for t in threads:
+        t.join()  # Wait for all threads to finish
+
+    try:
+        while True:
+            for mxid, device_queues in queues.items():
+                rgb_queue = device_queues["rgb"]
+                nn_queue = device_queues["nn"]
+                if rgb_queue.has() and nn_queue.has():
+                    frame = rgb_queue.get().getCvFrame()
+                    detections = nn_queue.get().detections
+                    height, width = frame.shape[:2]
+                    for det in detections:        
+                        cv2.rectangle(frame, (int(det.xmin * width), int(det.ymin * height)), (int(det.xmax * width), int(det.ymax * height)), (0, 255, 0), 2)
+                        cv2.putText(frame, f"Person: {det.label}", (det.xmin + 10, det.ymin + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                    cv2.imshow(mxid, frame)
+            if cv2.waitKey(1) == ord('q'):
+                break
     finally:
-        sock.close()
-
-with dai.Device(pm.pipeline) as device:
-
-    pv = PreviewManager(display=[Previews.color.name])
-    pv.createQueues(device)
-
-    while True:
-        if debug:
-            pv.prepareFrames()
-            pv.showFrames() 
-
-
-        if cv2.waitKey(1) == ord('q'):
-            break
+        cv2.destroyAllWindows()
+        print('Devices closed')
