@@ -1,7 +1,14 @@
+import socket
+import argparse
 import depthai as dai
 import cv2
 import blobconverter
 import numpy as np
+
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-i", "--index", type=int, required=True, help="Index of the device")
+args = parser.parse_args()
 
 # Function to create the pipeline
 def getPipeline():
@@ -51,6 +58,19 @@ def getPipeline():
 
     return pipeline
 
+def send_data_to_server(data):
+    server_ip = '127.0.0.1'
+    index = args.index - 1
+    server_port = 12345 + index
+
+    print(f'processing index: {index}')
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.sendto(data.encode(), (server_ip, server_port))
+    finally:
+        sock.close()
+
 # Main function to execute the pipeline
 def main():
     # Create the device with the pipeline
@@ -68,6 +88,9 @@ def main():
                 detections = nn_queue.get().detections
                 depth_frame = depth_queue.get().getFrame()
 
+                print(f"Camera: {args.index} Number of people detected: {len(detections)}")
+                #send_data_to_server(f"Number of people detected: {len(detections)}")
+
                 height, width = frame.shape[:2]
                 for det in detections:
                     xmin = int(det.xmin * width)
@@ -76,6 +99,11 @@ def main():
                     ymax = int(det.ymax * height)
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
                     depth_value = np.mean(depth_frame[ymin:ymax, xmin:xmax])  # Average depth in the bounding box
+                    middle_x = (xmin + xmax) // 2
+                    middle_y = (ymin + ymax) // 2
+                    #unique_id = person_id + person_count
+                    print(f"camera: {args.index} coordinate:( {middle_x} {middle_y} )_depth: {depth_value}")
+                    #send_data_to_server(f"camera: {args.index} coordinate:( {middle_x} {middle_y} )_depth: {depth_value} person: {det.label}")
                     cv2.putText(frame, f"Person: {det.label} Depth: {depth_value:.2f}mm", (xmin + 10, ymin + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
                 cv2.imshow("Detection", frame)
