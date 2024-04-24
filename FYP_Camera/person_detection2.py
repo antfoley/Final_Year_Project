@@ -99,12 +99,13 @@ def main():
                     ymax = int(det.ymax * height)
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
                     depth_value = np.mean(depth_frame[ymin:ymax, xmin:xmax])  # Average depth in the bounding box
+                    rgb_values = np.mean(frame[ymin:ymax, xmin:xmax], axis=(0, 1))  # Average RGB values in the bounding box
                     middle_x = (xmin + xmax) // 2
                     middle_y = (ymin + ymax) // 2
                     #unique_id = person_id + person_count
-                    print(f"camera: {args.index} coordinate:( {middle_x} {middle_y} )_depth: {depth_value}")
-                    #send_data_to_server(f"camera: {args.index} coordinate:( {middle_x} {middle_y} )_depth: {depth_value} person: {det.label}")
-                    cv2.putText(frame, f"Person: {det.label} Depth: {depth_value:.2f}mm", (xmin + 10, ymin + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                    print(f"camera: {args.index} coordinate:( {middle_x} {middle_y} )_RGB: {rgb_values}")
+                    #send_data_to_server(f"camera: {args.index} coordinate:( {middle_x} {middle_y} )_RGB: {rgb_values}")
+                    cv2.putText(frame, f"Person: {det.label} Depth: {depth_value:.2f}mm RGB: {rgb_values}", (xmin + 10, ymin + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
                 cv2.imshow("Detection", frame)
                 if cv2.waitKey(1) == ord('q'):
