@@ -88,7 +88,7 @@ def main():
                 detections = nn_queue.get().detections
                 depth_frame = depth_queue.get().getFrame()
 
-                print(f"Camera: {args.index} Number of people detected: {len(detections)}")
+                print(f"Camera: {args.index} NumberOfPeopleDetected: {len(detections)}")
                 #send_data_to_server(f"Number of people detected: {len(detections)}")
 
                 height, width = frame.shape[:2]

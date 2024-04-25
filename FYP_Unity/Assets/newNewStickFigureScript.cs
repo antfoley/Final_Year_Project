@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -51,17 +51,17 @@ public class newStickFigureScript : MonoBehaviour
     {
         while (isServerRunning)
         {
-            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0/* 12344 + sourceId */);
-            UdpReceiveResult receiveResult = await udpClient.ReceiveAsync();
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0/* 12344 + sourceId *///);
+            //UdpReceiveResult receiveResult = await udpClient.ReceiveAsync();
             // byte[] bytesReceived = receiveResult.Buffer;
-            string message = Encoding.ASCII.GetString(receiveResult.Buffer);
+            //string message = Encoding.ASCII.GetString(receiveResult.Buffer);
             // Debug.Log($"Received message from source {sourceId}: {message}");
-            UnityMainThreadDispatcher.Instance().Enqueue(() =>
-            {
+            //UnityMainThreadDispatcher.Instance().Enqueue(() =>
+            //{
                 /* if (sourceId == 1)
                     latestMessage1 = message;
                 else
-                    latestMessage2 = message; */
+                    latestMessage2 = message; 
                 switch(sourceId)
                 {
                     case 1: latestMessage1 = message; break;
@@ -219,3 +219,4 @@ public class newStickFigureScript : MonoBehaviour
         box.GetComponent<Renderer>().material.color = Color.red;
     }
 }
+*/
